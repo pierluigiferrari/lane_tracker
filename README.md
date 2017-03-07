@@ -132,7 +132,6 @@ Here is an example from the harder challenge video to visualize these two search
 |:--------------:|:----------------:|
 | ![image](output_images/search_lane_result01.png) | ![image](output_images/search_lane_result02.png) |
 | First Frame: Sliding Window Search | Second Frame: Band Search |
-|:--------------:|:----------------:|
 | ![image](output_images/search_lane_vis01.png) | ![image](output_images/search_lane_vis02.png) |
 
 ####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
