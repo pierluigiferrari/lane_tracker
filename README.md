@@ -150,12 +150,9 @@ An example image of the result is already provided above in section 4.
 
 Here are the links to the processed video files:
 
-The project video:
-![video](./project_video_lane_lines.mp4)
-The challenge video:
-![video](./challenge_video_lane_lines.mp4)
-The harder challenge video:
-![video](./harder_challenge_video_lane_lines.mp4)
+1. [project video](https://www.youtube.com/watch?v=LyMyVjPRIS0)
+2. [challenge video](https://www.youtube.com/watch?v=G72F7Y3f3ZY)
+3. [harder challenge video](https://www.youtube.com/watch?v=mRithgcjeS8)
 
 ---
 
