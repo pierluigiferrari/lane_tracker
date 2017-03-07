@@ -59,7 +59,7 @@ An example of a distortion-corrected image is already shown above.
 
 From here on out, all line numbers refer to lines in the main code file, `LaneTracker.py`.
 
-My program applies the perspective transform **before** any thresholding and filtering, so I'll briefly describe this part first.
+My program applies the perspective transform **before** any thresholding and filtering as I found this order yields better results, so I'll briefly describe this part first.
 
 The perspective transform happens simply by `find_lane_points()` calling `cv2.warpPerspective()` in line 776, there is no wrapper or anything. The output size of the warped image is set to (1080,1100). The warped image height of 1100 pixels was chosen to stretch out the warped image vertically in order to straighten the curves a bit, which helps the sliding window search described below perform better, while at the same time including a long enough patch of the road. The warp matrix was hard-coded based on manually chosen source and destination warp points as shown below based on `test_images/straight_lines1.jpg`. Automatic methods that try to find the warp points based on methods involving lines that point toward the image's vanishing point are too fragile and fail for most images, so I didn't pursue this option.
 
@@ -136,21 +136,26 @@ Here is an example from the harder challenge video to visualize these two search
 
 ####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+`get_curve_radius()` (lines 494-513) computes the curve radius and `get_eccentricity()` (lines 515-523) computes the car's distance from the center of the lane. The computation of the eccentricity is straight forward and uses conversion factors for meters per pixel that were calculated based on the warped images. The computation of the curve radius happens according to the formula [here](http://www.intmath.com/applications-differentiation/8-radius-curvature.php) using the same metric conversion factors and the y-value at which the curve radius is computed is the bottom of the image.
 
 ####6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
-
-![alt text][image6]
+An example image of the result is already provided above in section 4.
 
 ---
 
 ###Pipeline (video)
 
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
+####1. Provide a link to your final video output. Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+Here are the links to the processed video files:
+
+The project video:
+![video](./project_video_lane_lines.mp4)
+The challenge video:
+![video](./challenge_video_lane_lines.mp4)
+The harder challenge video:
+![video](./harder_challenge_video_lane_lines.mp4)
 
 ---
 
@@ -158,4 +163,10 @@ Here's a [link to my video result](./project_video.mp4)
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+One insight of my experiments was that color thresholding works a lot better than gradient thresholding and the program is more robust without applying any gradient thresholding at all. In my experiments, color thresholding accounted for the vast majority of the exposed lane line pixels, while gradient thresholding added little value on top of that, but instead contributed the majority of the noise in the filtered image. Using a bilateral adaptive color threshold as I did here has a similar effect as using a gradient threshold, only much better.
+
+In order to achieve decent performance on the harder challenge video I found it necessary to implement a filter to elminate greenery as an additional stage in `filter_lane_points()`. Notably, the LAB B-channel by itself is enough to filter out greenery very effectively without removing lane line pixels if the thresholds are set appropriately.
+
+One big problem that becomes apparent in the harder challenge video is the changing slope of the road. The warp matrix that is used for the perspective transform is static and assumes that the road ahead is flat. If that assumption does not hold, lines that should be parallel in the warped image will no longer be parallel. This makes it a lot harder to assess the validity of detected lane lines, because even if the lane lines in the warped image are not nearly parallel, they might still very well be valid lane lines. In order to account for this, I had to drastically relax the criteria that assess lane line validity in `check_validity()` (lines 525-591), otherwise the program would reject too many valid lane lines. On the other hand though, this relaxation of the validity criteria also leads to some detections passing for valid lane lines even though they should have been rejected. The only solution to this porblem is to use dynamic warp matrices that reflect the slope of the road in the respective image so that we can be sure that parallel lines actually appear parallel in the warped images and thus stricter validity criteria can be applied reliably. If you have any hints on how to improve on the static warp matrices used here, I'd love to here them.
+
+This project made me realize how hard computer vision is. I can't imagine that lane detection systems used in practice rely solely on camera image information, it should be much more robust to use RADAR or LIDAR in conjunction.
