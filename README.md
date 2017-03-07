@@ -49,15 +49,25 @@ I then used the output `object_points` and `image_points` to compute the camera 
 |:--------------:|:----------------:|:-----------------:|
 | ![image](output_images/calib_img_orig.png) | ![image](output_images/calib_img_corners.png) | ![image](output_images/calib_img_undist.png) |
 
-![image](output_images/calib_undistorted.png)
-
 ###Pipeline (single images)
 
 ####1. Provide an example of a distortion-corrected image.
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image2]
+
+An example of a distortion-corrected image is already shown above.
+
 ####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+
+The function that does all the color space conversion, filtering, morphing and color thresholding is the method `filter_lane_points()` of the class `LaneTracker` in lines 147-204 of `LaneTracker.py`.
+
+The method applies two color space conversions: The R-channel of the RGB color space is used to filter white lines and bright things in general and the B-channel of the LAB color space is used to filter yellow lines. I compared all channels of the RGB, HLS, HSV, and LAB color spaces on a number of test images and found that the LAB B-channel is by far the superior and lowest noise identifier of yellow lane lines, while rhe RGB R-channel was on all test images superior or on par with all other channels for detecting white lane lines.
+
+Next, a tophat transform (`cv2.morphologyEx()`) is applied to both isolated color channels to filter shapes that are brighter than their surroundings. In addition to keeping only shapes that are brighter than their surroundings, the tophat transform also keeps only shapes that fit inside the kernel (although this is a bit of an imprecise explanation), so large bright objects are also filtered out.
+
+Next, and most importantly, an adaptive color threshold is applied to both isolated color channels. Depending on the `filter_mode` argument, the method uses either `cv2.adaptiveThreshold()` or `bilateral_adaptive_threshold()`, which is defined in lines 42-81 of `LaneTracker.py`. The program makes use of both thresholding functions, but in most cases it uses the much more important `bilateral_adaptive_threshold()`. I wrote this function because a simple adaptive thresholding function like `cv2.adaptiveThreshold()` does not fit our needs for this problem. Here is why:
+
+In a simple adaptive thresholding function, a given pixel passes the threshold if it has a higher intensity value than the average (or some weighted average) of its neighborhood. While this is useful to filter bright lane lines, unfortunately it also keeps the contours of any large bright areas in the image that are surrounded by darker areas, and so a lot of noise will pass the threshold. Here is an example:
+
+
 
 ![alt text][image3]
 
