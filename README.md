@@ -150,7 +150,7 @@ Here are the links to the processed video files:
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-One insight of my experiments was that color thresholding works a lot better than gradient thresholding and the program is more robust without applying any gradient thresholding at all. In my experiments, color thresholding accounted for the vast majority of the exposed lane line pixels, while gradient thresholding added little value on top of that, but instead contributed the majority of the noise in the filtered image. Using a bilateral adaptive color threshold as I did here has a similar effect as using a gradient threshold, only much better.
+One insight of my experiments was that color thresholding works a lot better than gradient thresholding and the program is more robust without applying any gradient thresholding at all. In my experiments, color thresholding accounted for the vast majority of the exposed lane line pixels, while gradient thresholding added little value on top of that, but instead contributed the majority of the noise in the filtered image. Using a bilateral adaptive color threshold as I did here has a similar effect as using a gradient threshold, only better.
 
 In order to achieve decent performance on the harder challenge video I found it necessary to implement a filter to elminate greenery as an additional stage in `filter_lane_points()`. Notably, the LAB B-channel by itself is enough to filter out greenery very effectively without removing lane line pixels if the thresholds are set appropriately.
 
