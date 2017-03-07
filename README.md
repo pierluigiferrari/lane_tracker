@@ -75,13 +75,13 @@ Here is an example image and its warped version:
 
 | Original Image | Warped Image |
 |:--------------:|:----------------:|
-| ![image](test4.jpg) | ![image](test4_warped.png) |
+| ![image](output_images/test4.jpg) | ![image](output_images/test4_warped.png) |
 
 Now here are two thresholded versions of the warped image above, one using my bilateral adaptive threshold function and the other one using OpenCV's `cv2.adaptiveThreshold()`, both applied to the raw warped color channels with no prior tophat morphology (I'll talk about why below):
 
 | cv2.adaptiveThreshold | bilateral_adaptive_threshold() |
 |:--------------:|:----------------:|
-| ![image](test4_thresh_cv2adapt.png) | ![image](test4_thresh_bilat.png) |
+| ![image](output_images/test4_thresh_cv2adapt.png) | ![image](output_images/test4_thresh_bilat.png) |
 
 The lane lines are clearly visible in both binaries, but there is more noise in the left image. You can see a strong line left of the left lane line in the left image. Why is it there in the left image, but not in the right one? The sharp shadow cast by the guardrail causes the pixels right of it to be brighter than their overall average neighborhood, and so they pass the threshold in `cv2.adaptiveThreshold()`. In `bilateral_adaptive_threshold()` they don't pass the threshold, however, because the pixels are only brighter than what's on the left of them, but not what's on the right of them. For the same reason you can see white pixels in the left image at the points where the pavement suddenly turns from dark to light gray, and at the points where the black car is surrounded by light pavement. Most of this noise isn't there in the right image.
 
