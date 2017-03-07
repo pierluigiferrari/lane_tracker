@@ -45,7 +45,7 @@ I start by preparing "object points", which will be the (x, y, z) coordinates of
 
 I then used the output `object_points` and `image_points` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function. I applied this distortion correction to the test image using the `cv2.undistort()` function. Here is an illustration of the result:
 
-| Original Image | Corners Detected | Undistorted Image |
+| Original Image | Detected Corners | Distortion-Corrected Image |
 |:--------------:|:----------------:|:-----------------:|
 | ![image](output_images/calib_img_orig.png) | ![image](output_images/calib_img_corners.png) | ![image](output_images/calib_img_undist.png) |
 
