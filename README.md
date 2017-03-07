@@ -55,7 +55,30 @@ I then used the output `object_points` and `image_points` to compute the camera 
 
 An example of a distortion-corrected image is already shown above.
 
-####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+####2. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
+
+From here on out, all line numbers refer to lines in the main code file, `LaneTracker.py`.
+
+My program applies the perspective transform **before** any thresholding and filtering, so I'll briefly describe this part first.
+
+The perspective transform happens simply by `find_lane_points()` calling `cv2.warpPerspective()` in line 776, there is no wrapper or anything. The output size of the warped image is set to (1080,1100). The warped image height of 1100 pixels was chosen to stretch out the warped image vertically in order to straighten the curves a bit, which helps the sliding window search described below perform better, while at the same time including a long enough patch of the road. The warp matrix was hard-coded based on manually chosen source and destination warp points as shown below based on `test_images/straight_lines1.jpg`. Automatic methods that try to find the warp points based on methods involving lines that point toward the image's vanishing point are too fragile and fail for most images, so I didn't pursue this option.
+
+These are the source and destination points used to generate the warp matrices:
+
+| Source        | Destination   |
+|:-------------:|:-------------:|
+| 242, 695      | 439, 1100     |
+| 564, 473      | 439, 380      |
+| 721, 473      | 643, 380      |
+| 1064, 695     | 643, 1100     |
+
+I verified that my perspective transform was working as expected by drawing the source and destination points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+
+| Original Image | Warped Image |
+|:--------------:|:----------------:|
+| ![image](output_images/warp_calib_unwarped.png) | ![image](output_images/warp_calib_warped.png) |
+
+####3. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
 The function that does all the color space conversion, filtering, morphing and color thresholding is the method `filter_lane_points()` of the class `LaneTracker` in lines 147-204 of `LaneTracker.py`.
 
@@ -77,13 +100,13 @@ Here is an example image and its warped version:
 |:--------------:|:----------------:|
 | ![image](output_images/test4.jpg) | ![image](output_images/test4_warped.png) |
 
-Now here are two thresholded versions of the warped image above, one using my bilateral adaptive threshold function and the other one using OpenCV's `cv2.adaptiveThreshold()`, both applied to the raw warped color channels with no prior tophat morphology (I'll talk about why below):
+Now here are two thresholded versions of the warped image above, one using my bilateral adaptive threshold function and the other one using OpenCV's `cv2.adaptiveThreshold()`, both applied to the raw warped color channels with no prior tophat morphology (I'll talk about that below):
 
 | cv2.adaptiveThreshold | bilateral_adaptive_threshold() |
 |:--------------:|:----------------:|
 | ![image](output_images/test4_thresh_cv2adapt.png) | ![image](output_images/test4_thresh_bilat.png) |
 
-The lane lines are clearly visible in both binaries, but there is more noise in the left image. You can see a strong line left of the left lane line in the left image. Why is it there in the left image, but not in the right one? The sharp shadow cast by the guardrail causes the pixels right of it to be brighter than their overall average neighborhood, and so they pass the threshold in `cv2.adaptiveThreshold()`. In `bilateral_adaptive_threshold()` they don't pass the threshold, however, because the pixels are only brighter than what's on the left of them, but not what's on the right of them. For the same reason you can see white pixels in the left image at the points where the pavement suddenly turns from dark to light gray, and at the points where the black car is surrounded by light pavement. Most of this noise isn't there in the right image.
+The lane lines are clearly visible in both binaries, but there is more noise in the left image. You can see a strong line left of the left lane line in the left image. Why is it there in the left image, but not in the right one? The sharp shadow cast by the guardrail causes the pixels right of it to be brighter than their overall average neighborhood, and so they pass the threshold in `cv2.adaptiveThreshold()`. In `bilateral_adaptive_threshold()` they don't pass the threshold, because the pixels are only brighter than what's on the left of them, but not what's on the right of them. For the same reason you can see white pixels in the left image at the points where the pavement suddenly turns from dark to light gray, and at the points where the black car is surrounded by light pavement. Most of this noise isn't there in the right image.
 
 That's not the whole story though. If you apply a tophat morphology before the threshold, it makes the results with `cv2.adaptiveThreshold()` a lot better than without, because the tophat morphology already eliminates many bright shapes that are too large or shapes that aren't brighter than two sides of their neighborhood. So it's totally possible to get similar results with `cv2.adaptiveThreshold()` + tophat as you can with `bilateral_adaptive_threshold()`, but when I compared the results I found that the bilateral threshold still works a little better.
 
@@ -93,41 +116,24 @@ That's not the whole story though. If you apply a tophat morphology before the t
 
 The two measures described in the previous two paragraphs are in large part responsible for program's ability to find the lane lines in most frames of the harder challenge video.
 
-####3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
-
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
-
-```
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-
-```
-This resulted in the following source and destination points:
-
-| Source        | Destination   |
-|:-------------:|:-------------:|
-| 585, 460      | 320, 0        |
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
+The last step in `filter_lane_points()` is to apply an open morphology to the binary image. The open morphology first erodes the white pixel shapes by the kernel size and then dilates what remains left, resulting in the elimination of smaller noise parts in the image. This improves the robustness of the thresholding quite a bit.
 
 ####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+The methods `sliding_window_search()` (lines 206-411) and `band_search()` (lines 413-464) identify lane line pixels in the binary image that is the output of `filter_lane_points()`, `fit_poly()` (lines 466-473) fits a 2nd-degree polynomial to the indentified lane line pixels, and `get_poly_points()` (lines 475-492) computes the graph points of a 2nd-degree polynomial given its coefficients.
 
-![alt text][image5]
+`sliding_window_search()` is the search method used whenever we have no existing fitted lane line polynomials from recent previous images. It scans the image from the bottom to the top using rectangular search windows that are convolved with the image. Each successive search window covers only a certain range around the horizontal center of its preceding search window. Of course the width and height of the search windows and the search range (how far to the left and right of the previous window center to search) largely determine the performance of `sliding_window_search()`, but one property that improves its behavior quite a bit is that if one side (left or right) doesn't find any pixels in a given iteration, then it moves in the same direction as the other side, unless the other side didn't find any pixels either. This approach works a lot better than just keeping the horizontal window center constant from one iteration to the next in case no pixels are found.
+
+`band_search()` is the search method used whenever we do have existing fitted lane line polynomials from recent previous images. It searches for lane line pixels in a narrow band of a specified width around the previous polynomial graph. Since the images in a video sequence are intercorrelated by the fact that the change of the lane lines over the sequence is continuous (in the mathematical sense), this band search approach allows for a much more robust search method and is used whenever possible.
+
+Here is an example from the harder challenge video to visualize these two search processes. The left image is our first frame of the sequence and uses the sliding window search, the right image is our second frame and uses the two polynomials found in the first frame to perform a band search. The search area is highlighted in green, the detected lane pixels are highlighted in blue and red, and the resulting fitted polynomial graphs are shown in yellow.
+
+| First Frame Result | Second Frame Result |
+|:--------------:|:----------------:|
+| ![image](output_images/search_lane_result01.png) | ![image](output_images/search_lane_result02.png) |
+| First Frame: Sliding Window Search | Second Frame: Band Search |
+|:--------------:|:----------------:|
+| ![image](output_images/search_lane_vis01.png) | ![image](output_images/search_lane_vis02.png) |
 
 ####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
