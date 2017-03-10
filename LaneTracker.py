@@ -269,7 +269,7 @@ class LaneTracker:
             lefty.append(nonzeroy)
             leftx.append(nonzerox)
         else:
-            left_centroid = 440
+            left_centroid = int(img_width*0.4)
         # Now perform the above procedure for the right search range
         right_sum = np.sum(img[y_start:img_height,img_center:(img_width-ignore_sides)], axis=0)
         if np.any(right_sum):
@@ -289,7 +289,7 @@ class LaneTracker:
             righty.append(nonzeroy)
             rightx.append(nonzerox)
         else:
-            right_centroid = 640
+            right_centroid = int(img_width*0.6)
 
         # Append the found initial centroids to the list
         left_window_centroids.append(left_centroid)
