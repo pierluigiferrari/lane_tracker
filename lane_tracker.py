@@ -9,52 +9,6 @@ Created on Tue Mar  7 00:50:07 2017
 import numpy as np
 import cv2
 import matplotlib.image as mpimg
-import pickle
-from moviepy.editor import VideoFileClip
-
-def load_camera_calib(filepath):
-    '''
-    Load a camera matrix and distortion coefficients from a pickle file.
-    '''
-
-    with open(filepath, "rb") as f:
-        cam_calib = pickle.load(f)
-
-    cam_matrix = cam_calib['cam_matrix']
-    dist_coeffs = cam_calib['dist_coeffs']
-
-    print("Camera matrix and distortion coefficients loaded.")
-
-    return cam_matrix, dist_coeffs
-
-def load_warp_params(filepath):
-    '''
-    Load warp parameters for a bird's eye perspective transformation
-    from a pickle file.
-
-    Returns:
-        1. M: The warp matrix to transform an image from a car's dashboard camera
-           to bird's eye (warped) view.
-        2. Minv: The inverse of the above matrix to transform a bird's-eye-view image
-           back to the original perspective.
-        3. image_width_height: The expected orinal image width and height.
-        4. warped_width_height: The expected warped image width and height.
-        5. mppv: The meters-per-pixel ratio of the warped image in vertical direction.
-        6. mpph: The meters-per-pixel ratio of the warped image in horizontal direction.
-    '''
-
-    with open(filepath, "rb") as f:
-        warp_params = pickle.load(f)
-
-    M = warp_params['M']
-    Minv = warp_params['Minv']
-    image_width_height = warp_params['image_width_height']
-    warped_width_height = warp_params['warped_width_height']
-    mppv = warp_params['mppv']
-    mpph = warp_params['mpph']
-    print("Warp parameters loaded.")
-
-    return M, Minv, image_width_height, warped_width_height, mppv, mpph
 
 def bilateral_adaptive_threshold(img, ksize=30, C=0, mode='floor', true_value=255, false_value=0):
     '''
@@ -1101,35 +1055,3 @@ class LaneTracker:
                 return self.draw_lane(img), search_visualization
             else:
                 return self.draw_lane(img)
-
-### Run the program on a video
-
-# 1. Load the camera matrix, distortion coefficients, warp matrices, image size info, and metric conversion factors.
-
-cam_matrix, dist_coeffs = load_camera_calib('cam_calib.p')
-M, Minv, image_width_height, warped_width_height, mppv, mpph = load_warp_params('warp_params.p')
-
-# 2. Create a LaneTracker instance with the desired parameters
-
-lt = LaneTracker(img_size = image_width_height,
-                 warped_size = warped_width_height,
-                 cam_matrix = cam_matrix,
-                 dist_coeffs = dist_coeffs,
-                 warp_matrices = (M, Minv),
-                 mpp_conversion = (mppv, mpph),
-                 n_fail = 8, # After eight failed detection frames we print the failure message onto subsequent images
-                 n_reset = 4, # After four unsuccessful band searches we revert to sliding window search
-                 n_average = 2, # It's enough to average over 2 frames
-                 print_frame_count=False) # In case we'd like to print the frame number onto each image, but we don't
-
-# 3. Load the video file and run the process
-
-output_video = 'harder_challenge_video_lane_lines.mp4'
-input_clip = VideoFileClip('harder_challenge_video.mp4')
-processed_clip = input_clip.fl_image(lt.process) # Note: This function expects color images
-processed_clip.write_videofile(output_video, audio=False)
-
-# Print on what fraction of the frames we believe to have found valid lane lines
-success_ratio, success, total = lt.get_success_ratio()
-print("Success ratio:", success_ratio)
-print("Success absolute:", success)
