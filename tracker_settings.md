@@ -64,13 +64,13 @@ partial = 1.0
 
 The perspective transform that was measured for the project video scenario is not accurate for this case. The reason might be that the dashboard camera is mounted in a slightly different angle in this video compared to the project video. This shouldn't usually happen, i.e. the camera should always be mounted in a fixed way to record the exact same perspective, but since this isn't the case here, we have to deal with this inaccuracy. The proper way to deal with this would be to compute a new transform for this video, but instead we'll slightly change the criteria for what defines valid lane lines to accommodate the perspective distortion.
 
-**min_dist_y1 = 150
-max_dist_y1 = 230
+min_dist_y1 = 150
+**max_dist_y1 = 230
 min_dist_y2 = 110
 max_dist_y2 = 230
 min_dist_y3 = 80
-max_dist_y3 = 200
-thresh = 0.2**
+max_dist_y3 = 200**
+thresh = 0.25
 
 ### 3. Harder Challenge Video
 
@@ -103,9 +103,9 @@ n_tries = 2
 
 The bird's eye perspective transformation does not compensate for the varying slope of the road, so the warped image will be distorted whenever the slope of the road ahead changes. In order to compensate for this at least to some degree, the tolerance for accepting a lane line detection as valid must be a bit higher than in the constant-slope case. It is a very suboptimal way to deal with the problem, but it's feasible.
 
-**min_dist_y1 = 150
+min_dist_y1 = 150
 max_dist_y1 = 245
-min_dist_y2 = 140
+**min_dist_y2 = 140
 max_dist_y2 = 265
 min_dist_y3 = 125
 max_dist_y3 = 290
