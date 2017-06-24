@@ -38,12 +38,12 @@ lt = LaneTracker(img_size = image_width_height,
 
 # 3. Load the video file and run the process
 
-output_video = 'harder_challenge_video_lane_lines.mp4'
-input_clip = VideoFileClip('harder_challenge_video.mp4')
-processed_clip = input_clip.fl_image(lt.process) # Note: This function expects color images
-processed_clip.write_videofile(output_video, audio=False)
+output_clip_filename = 'harder_challenge_video_lane_lines.mp4' # Set the name and filepath of the output video here
+input_clip_filename = VideoFileClip('harder_challenge_video.mp4') # Set the name and filepath of the input video here
+processed_clip = input_clip_filename.fl_image(lt.process) # Note: This function expects color images
+processed_clip.write_videofile(output_clip_filename, audio=False)
 
 # Print on what fraction of the frames we believe to have found valid lane lines
 success_ratio, success, total = lt.get_success_ratio()
-print("Success ratio:", success_ratio)
-print("Success absolute:", success)
+print("Success ratio: ", success_ratio)
+print("Success absolute: ", success)
