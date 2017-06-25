@@ -78,10 +78,10 @@ You can find details about how the perspective transform is calibrated in [this 
 
 After the perspective transform, a number of adaptive filtering, color thresholding, and morphological operations are performed by `filter_lane_points()` to yield a binary version of the BV image in which filtered pixels are white and all other pixels are black.
 
-Let's take a step back though. The goal is to identify lane lines, so it is crucial to have a clear understanding of some optical properties of lane lines (on US roads).
+Let's take a step back though. The goal is to identify lane lines, so it is crucial to have a clear understanding of some optical properties of lane lines (on US roads):
 
 1. Lane lines have one of two colors, white or yellow.
-2. Typically, the surface on **both** sides of a lane line has lower brightness and/or saturation than the line itself.
+2. Typically, the surface on **both** sides of a lane line has lower brightness and/or saturation and a different hue than the line itself.
 3. Lane lines are not necessarily contiguous, so the algorithm needs to be able to identify individual line segments as belonging to the same lane line.
 
 The former two properties define the filtering process.
