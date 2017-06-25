@@ -1,28 +1,84 @@
-##Lane Tracker
+## Lane Tracker
 
-##**This README needs to be cleaned up**
+![example](output_images/example03.png)
 
-###Camera Calibration
+### 1. Introduction
 
-####1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
+This repository contains a lane detection and tracking algorithm that uses a traditional (i.e. non-machine-learning) computer vision approach to detect lane lines under the following circumstances:
 
-The code for this step is contained in the the file `camera_calibration.py`).
+1. Can detect curved lane lines with shapes that can be described by a second-degree polynomial.
+2. Detects exactly two lane lines, which are the left and right lane lines delimiting the lane that a vehicle is currently driving in. The lane lines of adjacent lanes cannot be detected. Detection will not work if the vehicle is not currently inside a lane and oriented along the direction of the lane.
+3. If one of the two lane lines is successfully detected, but the other one is not, then the detection will be discarded as invalid. The reason for this is that the algorithm can only evaluate the validity of a detection if two lines were detected.
+4. The purpose of this implementation is to demonstrate the capabilities of this approach, not to provide a real-time detector, which would obviously need to be implemented in a compiled language.
 
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image. Thus, `objp` is just a replicated array of coordinates, and `object_points` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image. `image_points` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.
+Demo videos:
+1. [Demo 1: Highway with dark pavement](https://www.youtube.com/watch?v=FJnjzTTTD9Y)
+2. [Demo 2: Highway with light and uneven pavement](https://www.youtube.com/watch?v=DviOI8wrPp8)
+3. [Demo 3: Curvy road with varying slope and lighting](https://www.youtube.com/watch?v=GdViO6M4xYE)
 
-I then used the output `object_points` and `image_points` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function. I applied this distortion correction to the test image using the `cv2.undistort()` function. Here is an illustration of the result:
+### 2. Basic Use Instructions
 
-| Original Image | Detected Corners | Distortion-Corrected Image |
-|:--------------:|:----------------:|:-----------------:|
-| ![image](output_images/calib_img_orig.png) | ![image](output_images/calib_img_corners.png) | ![image](output_images/calib_img_undist.png) |
+The main purpose of this repository is to demonstrate the approach explained further below. The program uses camera calibration and perspective transform matrices that depend on the resolution of the video/image, the camera used to record it, and its mount position (i.e. the camera's exact perspective on the road). It is therefore not straight forward to use on your own videos or images. Here are some basic use instructions nonetheless.
 
-###Pipeline (single images)
+Clone or fork this repository.
 
-####1. Provide an example of a distortion-corrected image.
+In order to process a video:
+
+1. Open the file process_video.py with an editor.
+2. Set the file path of the video to be processed and the name of the desired output video.
+3. Set the file paths to load camera calibration and warp matrices. The camera calibration and warp matrices in this repository are for an input resolution of 1280x720 and a dashboard camera mounted at the top center of the windshield of a sedan. These matrices will only serve as very rough approximations for your own camera and setup. In order to generate a camera calibration matrix for your camera, please consult [this OpenCV tutorial](http://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html). In order to generate warp matrices and meters-per-pixel conversion parameters, please consult [this Jupyter notebook](perspective_transformation.ipynb).
+4. Set all the options in the LaneTracker constructor, particularly the input image size and the size of the warped images that will result from the perspective transformation.
+5. Once all these parameters are loaded/set, execute the file from the console:
+`python process_video.py`
+
+Note: The processing of the video frames is performed by the `process()` method of the LaneTracker object. Since this method is passed to the `fl_image()` of VideoFileClip as an argument, you need to set all of the desired options for `process()` as default argument values. In order to do so, open lane_tracker.py and set the argument values accordingly.
+
+In order to process a single image:
+
+1. Instantiate a LaneTracker object as shown in process_video.py.
+2. Call the object's `process()` method.
+
+### 3. Dependencies
+
+1. Python 3.x
+2. Numpy
+3. OpenCV
+4. MoviePy (to process video files)
+5. Pickle (to load the camera calibration and warp matrices in this repository)
+
+### 4. Description of the Algorithm
+
+All code references in this section refer to the module lane_tracker.py. The `process()` method of the LaneTracker class aggregates the individual steps outline below.
+
+The rough steps of the algorithm are:
+
+1. Distortion is removed from the input image using a camera matrix and distortion coefficients.
+2. The input image is warped into the bird's eye view (BV) perspective.
+3. Various adaptive filtering, color thresholding, and morphological operations are performed by `filter_lane_points()` to yield a binary version of the BV image in which filtered pixels are white and all other pixels are black.
+4. One of two search methods (`sliding_window_search()` or `band_search()`) is applied to the binary image to separate lane pixels from noise. The goal of the search methods is to identify exactly two lane lines.
+5. Second-degree polynomials are fit to the detected lane pixels for the left and right lane line (`fit_poly()`).
+6. A validity check is performed to evaluate whether the detected lane lines are plausible (`check_validity()`).
+
+#### 4.1 Perspective transformation
+
+The program transforms input images into the bird's eye view perspective before processing them further. There are upsides and downsides to performing such a perspective transform.
+
+Among the downsides is that this transformation is an approximation to the true perpendicular view onto the road from above in that it assumes that
+
+1. the road is a plane and
+2. the vehicle's velocity vector is parallel to that plane at all times.
+
+Both of these assumptions are false almost all of the time. There are bumps in the road and the slope of the road is almost never constant, which leads to the vehicle's velocity vector not being parallel to the surface of the road lying ahead. Nonetheless the approximation is sufficiently accurate in many situations.
+
+Among the upsides of the BV transformation is that it makes the search methods `sliding_window_search()` and `band_search()` more reliable, because valid lane lines will be (nearly) parallel in the BV perspective, information which the search methods can use to search for lane line pixels in a more targeted way. It also facilitates the evaluation of whether a pair of detected lane lines is valid.
+
+### Pipeline (single images)
+
+#### 1. Provide an example of a distortion-corrected image.
 
 An example of a distortion-corrected image is already shown above.
 
-####2. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
+#### 2. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
 From here on out, all line numbers refer to lines in the main code file, `LaneTracker.py`.
 
@@ -45,11 +101,11 @@ I verified that my perspective transform was working as expected by drawing the 
 |:--------------:|:----------------:|
 | ![image](output_images/warp_calib_unwarped.png) | ![image](output_images/warp_calib_warped.png) |
 
-####3. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+#### 3. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
 The function that does all the color space conversion, filtering, morphing and color thresholding is the method `filter_lane_points()` of the class `LaneTracker` in lines 147-204 of `LaneTracker.py`.
 
-The method applies two color space conversions: The R-channel of the RGB color space is used to filter white lines and bright things in general and the B-channel of the LAB color space is used to filter yellow lines. I compared all channels of the RGB, HLS, HSV, and LAB color spaces on a number of test images and found that the LAB B-channel is by far the superior and lowest noise identifier of yellow lane lines, while rhe RGB R-channel was on all test images superior or on par with all other channels for detecting white lane lines.
+The method applies two color space conversions: The R-channel of the RGB color space is used to filter white lines and bright things in general and the B-channel of the LAB color space is used to filter yellow lines. I compared all channels of the RGB, HLS, HSV, and LAB color spaces on a number of test images and found that the LAB B-channel is by far the superior and lowest noise identifier of yellow lane lines, while the RGB R-channel was on all test images superior or on par with all other channels for detecting white lane lines while keeping noise to a minimum.
 
 Next, a tophat transform (`cv2.morphologyEx()`) is applied to both isolated color channels to filter shapes that are brighter than their surroundings. In addition to keeping only shapes that are brighter than their surroundings, the tophat transform also keeps only shapes that fit inside the kernel (although this is a bit of an imprecise explanation), so large bright objects are also filtered out.
 
@@ -85,7 +141,7 @@ The two measures described in the previous two paragraphs are in large part resp
 
 The last step in `filter_lane_points()` is to apply an open morphology to the binary image. The open morphology first erodes the white pixel shapes by the kernel size and then dilates what remains left, resulting in the elimination of smaller noise parts in the image. This improves the robustness of the thresholding quite a bit.
 
-####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
+#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
 The methods `sliding_window_search()` (lines 206-411) and `band_search()` (lines 413-464) identify lane line pixels in the binary image that is the output of `filter_lane_points()`, `fit_poly()` (lines 466-473) fits a 2nd-degree polynomial to the indentified lane line pixels, and `get_poly_points()` (lines 475-492) computes the graph points of a 2nd-degree polynomial given its coefficients.
 
@@ -101,19 +157,19 @@ Here is an example from the harder challenge video to visualize these two search
 | First Frame: Sliding Window Search | Second Frame: Band Search |
 | ![image](output_images/search_lane_vis01.png) | ![image](output_images/search_lane_vis02.png) |
 
-####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
+#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
 `get_curve_radius()` (lines 494-513) computes the curve radius and `get_eccentricity()` (lines 515-523) computes the car's distance from the center of the lane. The computation of the eccentricity is straight forward and uses conversion factors for meters per pixel that were calculated based on the warped images. The computation of the curve radius happens according to the formula [here](http://www.intmath.com/applications-differentiation/8-radius-curvature.php) using the same metric conversion factors and the y-value at which the curve radius is computed is the bottom of the image.
 
-####6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
+#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
 An example image of the result is already provided above in section 4.
 
 ---
 
-###Pipeline (video)
+### Pipeline (video)
 
-####1. Provide a link to your final video output. Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
+#### 1. Provide a link to your final video output. Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
 Here are the links to the processed video files:
 
@@ -123,9 +179,9 @@ Here are the links to the processed video files:
 
 ---
 
-###Discussion
+### Discussion
 
-####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 One insight of my experiments was that, for this particular problem, color thresholding works a lot better than gradient thresholding and the program is more robust without applying any gradient thresholding at all. The objects we're trying to detect here (lane line segments) have relatively simple structure (compared to detecting cars, for example) and are clearly defined by just color and size (we're looking only for shades of white and yellow of a certain minimum thickness/diameter that start close to the bottom of the image) and by the fact that they are brighter than their surrounding pixels. These properties of the objects of interest allow us to get very good results using just color thresholding (and some morphologies, but not gradients). In my experiments, color thresholding accounted for the vast majority of the exposed lane line pixels, while gradient thresholding added little value on top of that, but instead contributed the majority of the noise in the filtered image. Using a bilateral adaptive color threshold as I did here has a similar effect as using a gradient threshold, only better.
 
