@@ -59,9 +59,9 @@ The rough steps of the algorithm are:
 5. Second-degree polynomials are fit to the detected lane pixels for the left and right lane line (`fit_poly()`).
 6. A validity check is performed to evaluate whether the detected lane lines are plausible (`check_validity()`).
 
-#### 4.1 Perspective transformation
+#### 4.1 Perspective Transformation
 
-The program transforms input images into the bird's eye view perspective before processing them further. There are upsides and downsides to performing such a perspective transform.
+The program transforms input images into the bird's eye view perspective before processing them further. There are upsides and downsides to doing this.
 
 Among the downsides is that this transformation is an approximation to the true perpendicular view onto the road from above in that it assumes that
 
@@ -71,6 +71,33 @@ Among the downsides is that this transformation is an approximation to the true 
 Both of these assumptions are false almost all of the time. There are bumps in the road and the slope of the road is almost never constant, which leads to the vehicle's velocity vector not being parallel to the surface of the road lying ahead. Nonetheless the approximation is sufficiently accurate in many situations.
 
 Among the upsides of the BV transformation is that it makes the search methods `sliding_window_search()` and `band_search()` more reliable, because valid lane lines will be (nearly) parallel in the BV perspective, information which the search methods can use to search for lane line pixels in a more targeted way. It also facilitates the evaluation of whether a pair of detected lane lines is valid.
+
+You can find details about how the perspective transform is calibrated in [this Jupyter notebook](perspective_transformation.ipynb).
+
+#### 4.2 Filtering
+
+After the perspective transform, a number of adaptive filtering, color thresholding, and morphological operations are performed by `filter_lane_points()` to yield a binary version of the BV image in which filtered pixels are white and all other pixels are black.
+
+Let's take a step back though. The goal is to identify lane lines, so it is crucial to have a clear understanding of some optical properties of lane lines (on US roads).
+
+1. Lane lines have one of two colors, white or yellow.
+2. Typically, the surface on **both** sides of a lane line has lower brightness and/or saturation than the line itself.
+3. Lane lines are not necessarily contiguous, so the algorithm needs to be able to identify individual line segments as belonging to the same lane line.
+
+The former two properties define the filtering process.
+
+The first step for the design of this process was to analyze individual color channels of various color spaces and combinations of them in the search for those channels that are able to best separate lane line pixels from all other pixels. I compared all channels of the RGB, HLS, HSV, LAB and YUV color spaces on a wide variety of test images with the following results. Out of all color channels tested:
+
+1. The B-channel of the LAB color space is the strictly superior representation to identify yellow lane lines. It is most resistant against changes in lighting and has the highest signal-to-noise ratio.
+2. The R-channel of the RGB color space is the overall superior representation to identify white lane lines. Some other color channels show comparable results on some or all test images, but no other color channel (or combination) works better, except on rare exceptions.
+
+These two color channels are used to filter yellow and white lane lines separately.
+
+Here is an excerpt of the color space comparison:
+
+![colorspaces](output_images/color_channels08.png)
+
+Next, the tophat morphology (cv2.morphologyEx()) is applied to both isolated color channels to filter shapes that are brighter than their surroundings. In addition to keeping only shapes that are brighter than their surroundings, the tophat morphology also keeps only shapes that fit inside the kernel (although this is a bit of an imprecise explanation), so large bright objects are also filtered out. This is good, because lane lines are narrow objects.
 
 ### Pipeline (single images)
 
