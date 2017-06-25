@@ -4,7 +4,7 @@
 
 ### 1. Introduction
 
-This repository contains a lane detection and tracking algorithm that uses a traditional (i.e. non-machine-learning) computer vision approach to detect lane lines under the following circumstances:
+This repository contains a lane detection and tracking program that uses a traditional (i.e. non-machine-learning) computer vision approach to detect lane lines under the following circumstances:
 
 1. Can detect curved lane lines with shapes that can be described by a second-degree polynomial.
 2. Detects exactly two lane lines, which are the left and right lane lines delimiting the lane that a vehicle is currently driving in. The lane lines of adjacent lanes cannot be detected. Detection will not work if the vehicle is not currently inside a lane and oriented along the direction of the lane.
@@ -13,7 +13,7 @@ This repository contains a lane detection and tracking algorithm that uses a tra
 
 Demo videos:
 1. [Demo 1: Highway with dark pavement](https://www.youtube.com/watch?v=FJnjzTTTD9Y)
-2. [Demo 2: Highway with light and uneven pavement](https://www.youtube.com/watch?v=DviOI8wrPp8)
+2. [Demo 2: Highway with uneven pavement](https://www.youtube.com/watch?v=DviOI8wrPp8)
 3. [Demo 3: Curvy road with varying slope and lighting](https://www.youtube.com/watch?v=GdViO6M4xYE)
 
 ### 2. Basic Use Instructions
@@ -113,7 +113,7 @@ Here is an example image and its warped version:
 |:--------------:|:----------------:|
 | ![image](output_images/test4.jpg) | ![image](output_images/test4_warped.png) |
 
-Now here are two thresholded versions of the warped image above, one using the bilateral adaptive threshold function and the other one using OpenCV's `adaptiveThreshold()`, both applied to the raw warped color channels with no prior tophat morphology (more about that below):
+Here are two thresholded versions of the warped image above, one using the bilateral adaptive threshold function and the other one using OpenCV's `adaptiveThreshold()`, both applied to the raw warped color channels with no prior tophat morphology (more about that below):
 
 | cv2.adaptiveThreshold() | bilateral_adaptive_threshold() |
 |:--------------:|:----------------:|
