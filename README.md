@@ -94,8 +94,8 @@ The first step for the design of this process was to analyze individual color ch
 These two color channels are used to filter yellow and white lane lines separately.
 
 Here is an excerpt of the color space comparison:
- 
-![colorspaces](output_images/color_channels08.png)
+
+![colorspaces](output_images/color_channels10.png)
 
 Next, the tophat morphology (cv2.morphologyEx()) is applied to both isolated color channels to filter shapes that are brighter than their surroundings. In addition to keeping only shapes that are brighter than their surroundings, the tophat morphology also keeps only shapes that fit inside the kernel (although this is a bit of an imprecise explanation), so large bright objects are also filtered out. This is good, because lane lines are narrow objects.
 
